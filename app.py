@@ -58,7 +58,7 @@ button:hover{background:#005a9e}.error{color:#d32f2f;text-align:center;margin-bo
 <h2>Acceso al Chat</h2>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 <form method="POST">
-<input type="password" name="key" placeholder="Inserte la KEY" required>
+<input type="password" name="key" placeholder="Clave de acceso" required>
 <button type="submit">Ingresar</button>
 </form></div></body></html>"""
 
@@ -105,15 +105,25 @@ async def login():
     if request.method == "POST":
         form = await request.form
         if form.get("key") == ACCESS_KEY:
-            session["authenticated"] = True
-            return redirect("/")
+            response = await make_response(redirect("/"))
+            response.set_cookie("auth_key", ACCESS_KEY, httponly=True, samesite="Strict")
+            return response
         error = "Clave incorrecta. Intenta nuevamente."
     return await render_template_string(LOGIN_HTML, error=error)
 
 @bp.route("/logout")
 async def logout():
-    session.clear()
-    return redirect("/login")
+    response = await make_response(redirect("/login"))
+    response.delete_cookie("auth_key")
+    return response
+
+@bp.before_request
+async def check_auth():
+    allowed_paths = ["/login", "/favicon.ico"]
+    if request.path not in allowed_paths and not request.path.startswith("/assets"):
+        cookie_key = request.cookies.get("auth_key", "")
+        if cookie_key != ACCESS_KEY:
+            return redirect("/login")
 
 @bp.before_request
 async def check_auth():
