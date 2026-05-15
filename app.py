@@ -58,7 +58,7 @@ button:hover{background:#005a9e}.error{color:#d32f2f;text-align:center;margin-bo
 <h2>Acceso al Chat</h2>
 {% if error %}<p class="error">{{ error }}</p>{% endif %}
 <form method="POST">
-<input type="password" name="key" placeholder="Clave de acceso" required>
+<input type="password" name="key" placeholder="Inserte la KEY" required>
 <button type="submit">Ingresar</button>
 </form></div></body></html>"""
 
