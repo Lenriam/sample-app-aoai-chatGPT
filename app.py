@@ -5,6 +5,7 @@ import logging
 import uuid
 import httpx
 import asyncio
+import secrets
 from quart import (
     Blueprint,
     Quart,
@@ -13,6 +14,9 @@ from quart import (
     request,
     send_from_directory,
     render_template,
+    render_template_string,
+    session,
+    redirect,
     current_app,
 )
 
@@ -40,6 +44,23 @@ bp = Blueprint("routes", __name__, static_folder="static", template_folder="stat
 
 cosmos_db_ready = asyncio.Event()
 
+ACCESS_KEY = os.environ.get("AZURE_OPENAI_KEY", "")
+
+LOGIN_HTML = """<!DOCTYPE html>
+<html><head><title>Acceso</title><style>
+body{font-family:Arial,sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
+.box{background:white;padding:40px;border-radius:8px;box-shadow:0 2px 12px rgba(0,0,0,.15);width:320px}
+h2{text-align:center;color:#0078d4;margin-bottom:24px}
+input{width:100%;padding:10px;margin:8px 0 16px;border:1px solid #ddd;border-radius:4px;box-sizing:border-box;font-size:14px}
+button{width:100%;padding:12px;background:#0078d4;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px}
+button:hover{background:#005a9e}.error{color:#d32f2f;text-align:center;margin-bottom:12px;font-size:14px}
+</style></head><body><div class="box">
+<h2>Acceso al Chat</h2>
+{% if error %}<p class="error">{{ error }}</p>{% endif %}
+<form method="POST">
+<input type="password" name="key" placeholder="Clave de acceso" required>
+<button type="submit">Ingresar</button>
+</form></div></body></html>"""
 
 def create_app():
     app = Quart(__name__)
@@ -77,6 +98,28 @@ async def favicon():
 async def assets(path):
     return await send_from_directory("static/assets", path)
 
+@bp.route("/login", methods=["GET", "POST"])
+async def login():
+    error = None
+    if request.method == "POST":
+        form = await request.form
+        if form.get("key") == ACCESS_KEY:
+            session["authenticated"] = True
+            return redirect("/")
+        error = "Clave incorrecta. Intenta nuevamente."
+    return await render_template_string(LOGIN_HTML, error=error)
+
+@bp.route("/logout")
+async def logout():
+    session.clear()
+    return redirect("/login")
+
+@bp.before_request
+async def check_auth():
+    allowed_paths = ["/login", "/favicon.ico"]
+    if request.path not in allowed_paths and not request.path.startswith("/assets"):
+        if not session.get("authenticated"):
+            return redirect("/login")
 
 # Debug settings
 DEBUG = os.environ.get("DEBUG", "false")
