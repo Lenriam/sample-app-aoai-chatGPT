@@ -66,6 +66,7 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
+    app.secret_key = os.environ.get("SECRET_KEY", secrets.token_hex(32))
     
     @app.before_serving
     async def init():
