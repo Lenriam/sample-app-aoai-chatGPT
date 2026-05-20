@@ -105,7 +105,7 @@ async def login():
         form = await request.form
         if form.get("key") == ACCESS_KEY:
             response = await make_response(redirect("/"))
-            response.set_cookie("auth_key", ACCESS_KEY, httponly=True, samesite="Strict")
+            response.set_cookie("auth_key", ACCESS_KEY, httponly=True, samesite="none", secure=True)
             return response
         error = "Clave incorrecta. Intenta nuevamente."
     return await render_template_string(LOGIN_HTML, error=error)
