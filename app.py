@@ -15,7 +15,6 @@ from quart import (
     send_from_directory,
     render_template,
     render_template_string,
-    session,
     redirect,
     current_app,
 )
@@ -123,13 +122,6 @@ async def check_auth():
     if request.path not in allowed_paths and not request.path.startswith("/assets"):
         cookie_key = request.cookies.get("auth_key", "")
         if cookie_key != ACCESS_KEY:
-            return redirect("/login")
-
-@bp.before_request
-async def check_auth():
-    allowed_paths = ["/login", "/favicon.ico"]
-    if request.path not in allowed_paths and not request.path.startswith("/assets"):
-        if not session.get("authenticated"):
             return redirect("/login")
 
 # Debug settings
